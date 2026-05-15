@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduConnect AI - WhatsApp Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #e5ddd5; }
+        .chat-bg { background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-repeat: repeat; }
+        .wa-green { background-color: #075E54; }
+        .wa-light-green { background-color: #128C7E; }
+        .wa-bubble-me { background-color: #dcf8c6; }
+        .wa-bubble-ai { background-color: #ffffff; }
+        .message-shadow { box-shadow: 0 1px 0.5px rgba(0,0,0,0.13); }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 10px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+    </style>
+</head>
+<body class="h-screen flex flex-col">
+
+    <!-- WhatsApp Header -->
+    <header class="wa-green text-white p-3 flex items-center justify-between shadow-md z-10">
+        <div class="flex items-center gap-3">
+            <button class="md:hidden"><i class="fas fa-arrow-left"></i></button>
+            <div class="relative">
+                <img src="https://placehold.co/40x40/128C7E/ffffff?text=AI" alt="Avatar" class="w-10 h-10 rounded-full border border-white/20">
+                <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-[#075E54] rounded-full"></div>
+            </div>
+            <div>
+                <h1 class="font-bold text-sm md:text-base">EduConnect AI (Guru Kita)</h1>
+                <p class="text-xs text-green-100" id="status-text">Online</p>
+            </div>
+        </div>
+        <div class="flex gap-4 text-lg">
+            <i class="fas fa-video cursor-pointer opacity-80 hover:opacity-100"></i>
+            <i class="fas fa-phone cursor-pointer opacity-80 hover:opacity-100"></i>
+            <i class="fas fa-ellipsis-v cursor-pointer opacity-80 hover:opacity-100"></i>
+        </div>
+    </header>
+
+    <!-- Jenjang & Peran Selector -->
+    <div class="bg-white border-b border-gray-200 p-2 flex gap-2 overflow-x-auto custom-scrollbar shadow-sm">
+        <select id="role-select" class="text-xs bg-gray-100 border rounded-full px-3 py-1 outline-none focus:ring-1 ring-green-600 shrink-0">
+            <option value="Siswa">Siswa</option>
+            <option value="Guru">Guru</option>
+        </select>
+        <div class="h-6 w-[1px] bg-gray-300 self-center"></div>
+        <div class="flex gap-2" id="jenjang-container">
+            <button onclick="setJenjang('PAUD')" class="jenjang-btn text-xs bg-green-100 text-green-800 border border-green-300 rounded-full px-3 py-1 whitespace-nowrap active-jenjang">PAUD</button>
+            <button onclick="setJenjang('SD')" class="jenjang-btn text-xs bg-gray-100 text-gray-600 border border-gray-200 rounded-full px-3 py-1 whitespace-nowrap">SD</button>
+            <button onclick="setJenjang('SMP')" class="jenjang-btn text-xs bg-gray-100 text-gray-600 border border-gray-200 rounded-full px-3 py-1 whitespace-nowrap">SMP</button>
+            <button onclick="setJenjang('SMA')" class="jenjang-btn text-xs bg-gray-100 text-gray-600 border border-gray-200 rounded-full px-3 py-1 whitespace-nowrap">SMA</button>
+            <button onclick="setJenjang('Universitas')" class="jenjang-btn text-xs bg-gray-100 text-gray-600 border border-gray-200 rounded-full px-3 py-1 whitespace-nowrap">Kuliah</button>
+        </div>
+    </div>
+
+    <!-- Chat History Area -->
+    <main id="chat-container" class="flex-1 overflow-y-auto p-4 md:px-20 lg:px-64 chat-bg custom-scrollbar flex flex-col gap-3">
+        <!-- Welcoming Message -->
+        <div class="self-center bg-blue-100 text-blue-800 text-[10px] px-3 py-1 rounded-md mb-4 uppercase tracking-wider font-semibold shadow-sm">
+            Pesan dienkripsi secara AI. Ketuk untuk info lebih lanjut.
+        </div>
+        
+        <div class="self-start wa-bubble-ai p-3 rounded-lg rounded-tl-none max-w-[85%] message-shadow animate-fade-in relative">
+            <p class="text-sm">Halo! Saya <b>EduConnect AI</b>. 👋</p>
+            <p class="text-xs mt-1 text-gray-700">Silakan pilih jenjang pendidikan di atas, lalu tanyakan apa saja materi yang ingin kamu pelajari hari ini!</p>
+            <span class="text-[10px] text-gray-400 float-right mt-1 ml-4">08:00</span>
+        </div>
+    </main>
+
+    <!-- Typing Indicator (Hidden by default) -->
+    <div id="typing-indicator" class="hidden md:px-20 lg:px-64 px-4 py-2 bg-transparent">
+        <div class="bg-white rounded-full px-4 py-1 inline-flex gap-1 items-center shadow-sm">
+            <div class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
+            <div class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+            <div class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+            <span class="text-xs text-gray-500 ml-2 italic">Sedang mengetik...</span>
+        </div>
+    </div>
+
+    <!-- Footer Input Area -->
+    <footer class="p-2 md:px-20 lg:px-64 flex items-end gap-2 bg-[#f0f2f5]">
+        <div class="flex-1 bg-white rounded-2xl flex items-center px-3 py-1 shadow-sm border border-gray-200">
+            <button class="text-gray-500 p-2"><i class="far fa-smile text-xl"></i></button>
+            <textarea id="user-input" rows="1" class="flex-1 bg-transparent border-none focus:ring-0 text-sm py-2 max-h-32 resize-none" placeholder="Ketik pesan..."></textarea>
+            <button class="text-gray-500 p-2"><i class="fas fa-paperclip text-xl -rotate-45"></i></button>
+            <button class="text-gray-500 p-2"><i class="fas fa-camera text-xl"></i></button>
+        </div>
+        <button id="send-btn" class="wa-light-green text-white w-12 h-12 rounded-full flex items-center justify-center shadow-md active:scale-95 transition-transform">
+            <i class="fas fa-paper-plane text-lg ml-0.5"></i>
+        </button>
+    </footer>
+
+    <script>
+        let currentJenjang = 'PAUD';
+        const chatContainer = document.getElementById('chat-container');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const typingIndicator = document.getElementById('typing-indicator');
+        const roleSelect = document.getElementById('role-select');
+        const statusText = document.getElementById('status-text');
+
+        // Configure Markdown options
+        marked.setOptions({
+            breaks: true,
+            gfm: true
+        });
+
+        // Set Jenjang Education
+        function setJenjang(val) {
+            currentJenjang = val;
+            document.querySelectorAll('.jenjang-btn').forEach(btn => {
+                btn.classList.remove('bg-green-100', 'text-green-800', 'border-green-300', 'active-jenjang');
+                btn.classList.add('bg-gray-100', 'text-gray-600', 'border-gray-200');
+            });
+            event.target.classList.add('bg-green-100', 'text-green-800', 'border-green-300', 'active-jenjang');
+            event.target.classList.remove('bg-gray-100', 'text-gray-600', 'border-gray-200');
+        }
+
+        // Auto-expand textarea
+        userInput.addEventListener('input', () => {
+            userInput.style.height = 'auto';
+            userInput.style.height = userInput.scrollHeight + 'px';
+        });
+
+        // Send Message Handler
+        async function handleSendMessage() {
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            // Add user message to UI
+            appendMessage(text, 'me');
+            userInput.value = '';
+            userInput.style.height = 'auto';
+            
+            // Show typing and call AI
+            showTyping(true);
+            try {
+                await callGeminiAI(text);
+            } catch (error) {
+                console.error(error);
+                appendMessage("Maaf, sepertinya ada kendala koneksi. Coba lagi ya!", 'ai');
+            } finally {
+                showTyping(false);
+            }
+        }
+
+        sendBtn.addEventListener('click', handleSendMessage);
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage();
+            }
+        });
+
+        function appendMessage(text, sender) {
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const messageDiv = document.createElement('div');
+            
+            if (sender === 'me') {
+                messageDiv.className = 'self-end wa-bubble-me p-2.5 rounded-lg rounded-tr-none max-w-[85%] message-shadow animate-fade-in relative';
+                messageDiv.innerHTML = `
+                    <p class="text-sm whitespace-pre-wrap">${text}</p>
+                    <div class="flex items-center justify-end gap-1 mt-1">
+                        <span class="text-[10px] text-gray-500">${time}</span>
+                        <i class="fas fa-check-double text-[10px] text-blue-500"></i>
+                    </div>
+                `;
+            } else {
+                messageDiv.className = 'self-start wa-bubble-ai p-3 rounded-lg rounded-tl-none max-w-[85%] message-shadow animate-fade-in relative';
+                // Parse markdown
+                const htmlContent = marked.parse(text);
+                messageDiv.innerHTML = `
+                    <div class="prose prose-sm max-w-none text-gray-800 text-sm">
+                        ${htmlContent}
+                    </div>
+                    <span class="text-[10px] text-gray-400 float-right mt-1 ml-4">${time}</span>
+                `;
+            }
+
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function showTyping(show) {
+            if (show) {
+                typingIndicator.classList.remove('hidden');
+                statusText.innerText = "sedang mengetik...";
+            } else {
+                typingIndicator.classList.add('hidden');
+                statusText.innerText = "Online";
+            }
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        async function callGeminiAI(query) {
+            const role = roleSelect.value;
+            const systemPrompt = `
+                Kamu adalah EduConnect AI, seorang asisten pendidikan profesional yang ramah dan ahli.
+                Konteks Pengguna Saat Ini:
+                - Peran: ${role}
+                - Jenjang Pendidikan: ${currentJenjang}
+
+                ATURAN RESPONS:
+                1. Jika jenjang PAUD: Gunakan bahasa yang sangat sederhana, penuh semangat, gunakan banyak emoji, dan berikan analogi dunia nyata yang mudah dipahami anak kecil.
+                2. Jika jenjang SD-SMP: Gunakan bahasa santun, informatif, berikan contoh soal sederhana, dan dorong rasa ingin tahu.
+                3. Jika jenjang SMA: Gunakan bahasa semi-formal, berikan data pendukung, rumus (jika perlu), dan konteks persiapan kuliah/karir.
+                4. Jika jenjang Universitas: Gunakan bahasa akademis yang kritis, sertakan referensi teori, dan berikan analisis mendalam.
+                5. Sebagai GURU: Bantu buatkan RPP (Rencana Pelaksanaan Pembelajaran), ide metode mengajar kreatif, atau evaluasi materi.
+                6. Sebagai SISWA: Jelaskan konsep dengan sabar, berikan rangkuman, dan tips belajar.
+                7. Selalu gunakan format Markdown (bold, list, code blocks) agar mudah dibaca di layar HP.
+                8. Gunakan Google Search untuk memastikan informasi data terbaru jika diperlukan.
+            `;
+
+            const apiKey = ""; // Canvas handles this automatically
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: query }] }],
+                tools: [{ "google_search": {} }],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                }
+            };
+
+            // Implement Exponential Backoff
+            const fetchWithRetry = async (url, options, retries = 3, backoff = 1000) => {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok && retries > 0) throw new Error(response.status);
+                    return response;
+                } catch (error) {
+                    if (retries <= 0) throw error;
+                    await new Promise(resolve => setTimeout(resolve, backoff));
+                    return fetchWithRetry(url, options, retries - 1, backoff * 2);
+                }
+            };
+
+            const response = await fetchWithRetry(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+            const candidate = result.candidates?.[0];
+
+            if (candidate && candidate.content?.parts?.[0]?.text) {
+                let aiText = candidate.content.parts[0].text;
+                
+                // Extract sources if grounding used
+                let sourcesHtml = "";
+                const groundingMetadata = candidate.groundingMetadata;
+                if (groundingMetadata && groundingMetadata.groundingAttributions) {
+                    const sources = groundingMetadata.groundingAttributions
+                        .map(attr => ({ uri: attr.web?.uri, title: attr.web?.title }))
+                        .filter(s => s.uri && s.title);
+                    
+                    if (sources.length > 0) {
+                        sourcesHtml = "\n\n---\n*Sumber:* \n" + sources.slice(0, 3).map(s => `- [${s.title}](${s.uri})`).join('\n');
+                    }
+                }
+                
+                appendMessage(aiText + sourcesHtml, 'ai');
+            } else {
+                appendMessage("Maaf, saya tidak bisa memproses permintaan itu sekarang. Ada kendala pada sistem.", 'ai');
+            }
+        }
+
+        // Initialize with auto-scroll
+        window.onload = () => {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        };
+    </script>
+</body>
+</html>
